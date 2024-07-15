@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose'
-import bcrypt from 'bcrypt'
 import {
   StudentModel,
   TGuardian,
@@ -8,7 +7,6 @@ import {
   // TStudentMethod,
   TUserName,
 } from './student.interface'
-import config from '../../config'
 
 const userNameSchema = new Schema<TUserName>({
   firstName: {
@@ -73,14 +71,17 @@ const localGuradianSchema = new Schema<TLocalGuardian>({
 const studentSchema = new Schema<TStudent, StudentModel>(
   {
     id: { type: String },
-    password: {
-      type: String,
-      required: true,
+    user: {
+      type: Schema.Types.ObjectId,
+      required: [true, 'User id is required'],
+      unique: true,
+      ref: 'User',
     },
     name: userNameSchema,
     gender: {
       type: String,
       enum: ['male', 'female'],
+      required: true,
     },
     dateOfBirth: { type: String },
     email: { type: String, required: true },
@@ -95,11 +96,6 @@ const studentSchema = new Schema<TStudent, StudentModel>(
     guardian: guardianSchema,
     localGuardian: localGuradianSchema,
     profileImg: { type: String },
-    isActive: {
-      type: String,
-      enum: ['active', 'blocked'],
-      default: 'active',
-    },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -107,19 +103,6 @@ const studentSchema = new Schema<TStudent, StudentModel>(
   },
   { toJSON: { virtuals: true } },
 )
-
-// middlewares:
-studentSchema.pre('save', async function (next) {
-  // eslint-disable-next-line @typescript-eslint/no-this-alias
-  const user = this
-  user.password = await bcrypt.hash(user.password, Number(config.salt_rounds))
-  next()
-})
-
-studentSchema.post('save', function (doc, next) {
-  doc.password = ''
-  next()
-})
 
 // query middleware:
 studentSchema.pre('find', async function (next) {
