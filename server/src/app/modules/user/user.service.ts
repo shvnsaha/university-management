@@ -1,15 +1,25 @@
 import config from '../../config'
+import { AcademicSemester } from '../academicSemester/academicSemester.model'
 import { TStudent } from '../student/student.interface'
 import { Student } from '../student/student.model'
 import { TUSer } from './user.interface'
 import { User } from './user.model'
+import { generateStudentId } from './user.utils'
 
 const createStudentIntoDB = async (password: string, payload: TStudent) => {
   const user: Partial<TUSer> = {}
 
   user.password = password || (config.default_pass as string)
   user.role = 'student'
-  user.id = '2030100001'
+
+  // find academic semester info
+  const admissionSemester = await AcademicSemester.findById(
+    payload.admissionSemester,
+  )
+
+  //set  generated id
+  user.id = await generateStudentId(admissionSemester)
+  // user.id = '2030100001'
 
   const result = await User.create(user)
 
